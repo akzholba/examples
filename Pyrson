@@ -1,0 +1,80 @@
+#Критерий Пирсона руками
+def Pyrson(data):
+    import scipy.stats as stats
+    import numpy as np
+    from scipy.special import erf 
+    Phi = (lambda x: erf(x/2**0.5)/2)   
+    #формируем случайную выборку из нормального распределения
+
+    #функция, описывающая теоретические частоты
+    def freqAB(data,interval,mu = 0,sigma = 1):
+        #return(len(data)*(Phi(((float(interval[1]))-mu)/sigma) - Phi(((float(interval[0]))-mu)/sigma)))
+        return(len(data)*(stats.norm.cdf(((float(interval[1]))),loc = mu,scale = sigma) - stats.norm.cdf((float(interval[0])),loc = mu,scale = sigma)))
+    #data =np.random.normal(loc = 5,scale = 2, size = 10000)
+    #['MAGN', 'MTSS', 'NLMK','MSNG','VTBR']
+    #data = newtab1['MTSS'].tolist()
+    #data = data[1:600]
+    mu,sigma =np.mean(data),np.std(data)
+    #Определим кол-во интервалов
+    bins = int(round(1+3.2*np.log(len(data))))
+    #bins = 6
+    #Определим шаг
+    step =(-min(data)+max(data))/bins
+    #Список с интервалами
+    intervals = [[min(data)+step*(i),min(data)+(step)*(i+1)] for i in range(bins)]
+    #теперь проверим для интервалов np>5 и если надо объеденим некоторые
+    end = max([i[1] for i in intervals])#определелим правую границу исследуемого промежутка
+    beg = min([i[0] for i in intervals])#определим самую правую границу промежутка(по сути минимальный элемент выборки)
+
+    intervals_new = list()#создаем список под новые "расширенные интервалы"
+    for index in range(len(intervals)):
+        k = list(intervals[index])#фиксируем интервал
+        while freqAB(data,k,mu = mu,sigma = sigma)<=5:#до тех пор, пока np_i<=5
+            if k[1]+step<= end:#если можем расширять вправо
+                k[1]+=step#расширяем на шаг вправо
+            else:
+                 if k[0]-step>=beg:#аналогично расширению влево
+                     k[0]-=step
+        intervals_new.append(k)
+    newi = [1 for i in range(len(intervals_new))]#создаем массив индикаторов, будет ли этот промежуток входит в любой другой from intervals_new
+    intervalss = []#список под новые промежутки, которые не содержаться в других из intervals_new
+    povt = []#список для повторяющихся интервалов(да, как получилось, такое случается)
+    povtround = []#список повторяющихся интервалов с округленными границами, чтобы различать те, которые похожи с точностью 10^-10
+    for i in range(len(intervals_new)):
+        #фиксируем значение промежутка
+        fix = intervals_new[i]
+        for j in range(len(intervals_new)):
+            if i==j:#если мы сравниваем интервал сам с собой
+                continue
+            if round(fix[0],5)==round(intervals_new[j][0],5):#если левые границы одинаковы
+                if fix[1]<intervals_new[j][1]:#и правая, фиксирумая граница меньше, чем у сравниваемого, то значит, что он входит в другой
+                    newi[i] = 0#поэтому в новый список он входить не будет
+            if round(fix[1],5)==round(intervals_new[j][1],5):#аналогичная проверка для правых границ
+                if fix[0]>intervals_new[j][0]:
+                    newi[i] = 0
+            if round(fix[0],5)==round(intervals_new[j][0],5) and round(fix[1],5)==round(intervals_new[j][1],5):#если эти промежутки дублируют друг друга
+                newi[i] = 0 #его повтор не должен входить в новые
+                l = [round(z,10) for z in fix]#преобразуем интервал округляя границы
+                if l not in povtround:#если округленные не входит в список повторных округленных
+                    povt.append(fix)#добавим оригинальный интервал в список повторов
+                    povtround.append(l)#добавим округленный интервал в список повторов с окр. границами
+        if newi[i]!=0:#если индикатор не нулевой, то 
+            intervalss.append(intervals_new[i])#добавляем к новому списку
+    for i in povt:
+        intervalss.append(i)#добавляем к списку один из группы повторов
+    bins = len(intervalss)
+    #определим частоты попадания в интервал 
+    freq = []
+    for interval in intervalss:
+        freq.append(sum(float(interval[0])<=float(i) and float(i)<float(interval[1])  for i in data))#Посчитаем частоты попадания в интервал для эмп.данных
+    intervalss[0][0] = -1000
+    intervalss[-1][1] = 1000
+    freq_t  =[]
+    for interval in intervalss:
+        freq_t.append(freqAB(data,interval,mu ,sigma ))#считаем теоретические частоты =n*p_i,p_i считаю по Лапласу
+    #P(a<x<b) = F(b)-F(a)
+    stat = [(freq[i] - freq_t[i])**2/(freq_t[i])  for i in range(bins)]
+    static_p = sum(stat)#статистика
+    flag = static_p<stats.chi2.ppf(0.95,bins-1)#принимается ли критерий?
+    print(mu,' ' ,sigma)
+    print((static_p,stats.chi2.ppf(0.95,bins-1),'Принимается'*int(flag)+'Отклоняется'*(1-int(flag))))
