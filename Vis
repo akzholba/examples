@@ -1,0 +1,22 @@
+from scipy.stats import norm
+import matplotlib.pyplot as plt
+import numpy as np
+def sravn(ticker):
+    random_sample = newtab1[ticker].tolist()
+    # Подборка параметров
+    m_MM = np.mean(random_sample)
+    s_MM = np.std(random_sample)
+    parameters = norm.fit(random_sample,loc = round(m_MM,0),scale = round(s_MM,0))
+    x = np.linspace(-0.5,0.5,100)
+    # Последовательность значений pdf
+    fitted_pdf = norm.pdf(x,loc = parameters[0],scale = parameters[1])
+    normal_pdf = norm.pdf(x,loc = m_MM,scale = s_MM)
+    plt.plot(x,fitted_pdf,"red",label="ММП",linestyle="dashed", linewidth=4)
+    plt.plot(x,normal_pdf,"blue",label="MM", linewidth=2)
+    plt.hist(random_sample,density=1,color="k",alpha=.3)
+    plt.title("ММП")
+    plt.legend()
+    plt.show()
+    print(m_MM,s_MM)
+    print(parameters)
+interactive(sravn, ticker =['MAGN', 'MTSS', 'NLMK','MSNG','VTBR'])
