@@ -1,0 +1,21 @@
+from scipy.stats import norm,kstest
+import pandas as pd
+# data = np.random.normal(0, 1, 249)
+data = sorted(data)
+# вычисляем выборочное среднее и стандартное отклонение
+tab = pd.DataFrame()
+# проверка вручную
+tab['x'] = data
+tab['i/n'] = [i/len(data) for i in range(1, len(data) + 1)]
+tab['(i-1)/n'] = [(i-1)/len(data) for i in range(1, len(data) + 1)]
+# c параметрами из теоритического распределения
+tab['F(x)'] = [norm.cdf(data[i], mu, sigma) for i in range(len(data))]
+tab['i/n - F(x)'] = tab['i/n'] - tab['F(x)']
+tab['F(x) - (i-1)/n'] = tab['F(x)'] - tab['(i-1)/n']
+# Статистики
+D_plus = max(tab['i/n - F(x)'])
+D_minus = max(tab['F(x) - (i-1)/n'])
+D_res = max(D_plus, D_minus)
+print('Значение статистики, посчитанной "вручную" =', str(D_res))
+print('Значение функции  =', str(kstest(data,'norm', [mu, sigma]))) 
+#tab
