@@ -1,0 +1,1 @@
+My thesis is devoted to the problem of data imbalance in the classification of fraud. Synthetic data rebalancing techniques are considered as a possible improvement.
