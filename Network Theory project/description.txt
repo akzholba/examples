@@ -1,0 +1,1 @@
+Case study how the average path length in the graph changes when the nodes with the highest centrality are removed
